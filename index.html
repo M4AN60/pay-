@@ -5,86 +5,283 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Weekly Pay Split Calculator (AU)</title>
   <style>
-    body {font-family: Inter, sans-serif; background:#0f172a; color:#e5e7eb; margin:0; padding:20px;}
-    .card {background:#111827; border-radius:16px; padding:20px; max-width:900px; margin:auto;}
-    h1 {font-size:24px; margin-bottom:10px;}
-    label {display:block; margin:8px 0 4px;}
-    input {width:100%; padding:8px; border-radius:8px; border:1px solid #334155; background:#0b1227; color:#e5e7eb;}
-    button {margin-top:10px; background:#22c55e; color:#000; border:none; padding:10px 14px; border-radius:8px; cursor:pointer;}
-    .grid {display:grid; grid-template-columns:1fr 1fr; gap:20px;}
-    table {width:100%; border-collapse:collapse; margin-top:20px;}
-    th, td {padding:8px; border-bottom:1px solid #1e293b; text-align:left;}
-    .right{text-align:right;}
-    canvas{width:100%; background:#0b1227; border:1px solid #1e293b; border-radius:12px; margin-top:12px;}
+    :root{
+      --bg:#0f172a;/*slate-900*/
+      --panel:#111827ee;/*gray-900*/
+      --ink:#e5e7eb;/*gray-200*/
+      --muted:#9ca3af;/*gray-400*/
+      --accent:#22c55e;/*green-500*/
+      --warn:#f59e0b;/*amber-500*/
+      --danger:#ef4444;/*red-500*/
+      --card:#0b1023;/*slate*/
+      --shadow:0 8px 32px rgba(0,0,0,.4);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1200px 600px at 0% 0%,#1f2937 0%,#0f172a 60%),var(--bg);color:var(--ink);font:500 16px/1.4 Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial}
+    .wrap{max-width:1100px;margin:24px auto;padding:16px}
+    .title{font-size:clamp(20px,3vw,28px);font-weight:800;letter-spacing:.2px;margin:0 0 12px}
+    .subtitle{color:var(--muted);margin:0 0 24px}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media (min-width:960px){.grid{grid-template-columns:1.1fr .9fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+    .card h2{margin:0 0 12px;font-size:18px}
+    .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:8px 0}
+    label{color:var(--muted);font-size:14px}
+    input[type="number"], input[type="text"], input[type="date"]{width:170px;background:#0b1227;border:1px solid rgba(255,255,255,.1);color:var(--ink);padding:8px 10px;border-radius:10px;font:600 16px/1 Inter}
+    input[type="number"]:focus{outline:2px solid #2563eb22}
+    .inline{display:flex;gap:12px;flex-wrap:wrap}
+    .muted{color:var(--muted);font-size:13px}
+    .totals{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .totals .kpi{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px}
+    .kpi .k{font-size:13px;color:var(--muted)}
+    .kpi .v{font-size:22px;font-weight:800}
+    .bar{height:12px;background:#0b1227;border:1px solid rgba(255,255,255,.1);border-radius:999px;overflow:hidden}
+    .bar > span{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#34d399,#60a5fa,#93c5fd,#a78bfa,#c4b5fd)}
+    .tag{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:#0b1227;color:var(--ink)}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+    button{background:var(--accent);color:#07120a;border:none;padding:10px 14px;border-radius:12px;font-weight:800;cursor:pointer}
+    button.secondary{background:#1f2937;color:#cbd5e1;border:1px solid rgba(255,255,255,.12)}
+    button.warn{background:var(--warn);color:#1a1307}
+    .table{width:100%;border-collapse:collapse;margin-top:6px}
+    .table th,.table td{padding:10px;border-bottom:1px dashed rgba(255,255,255,.12);text-align:left}
+    .right{text-align:right}
+    .foot{margin-top:10px;color:var(--muted);font-size:12px}
+    .success{color:#34d399}
+    .danger{color:var(--danger)}
+    canvas{width:100%;background:#0b1227;border:1px solid rgba(255,255,255,.1);border-radius:12px}
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Weekly Pay Split Calculator (AU)</h1>
+  <div class="wrap">
+    <h1 class="title">Weekly Pay Split Calculator (AU)</h1>
+    <p class="subtitle">Enter your take‑home pay and fixed costs. The leftover auto‑splits into <span class="tag">Yamba Rod Run</span>, <span class="tag">Gold Coast 500</span>, and <span class="tag">Savings</span>. Values save locally.</p>
+
     <div class="grid">
-      <div>
-        <label>Take-home pay ($)</label>
-        <input id="net" type="number" step="0.01" value="400" />
-        <label>Fuel</label>
-        <input id="fuel" type="number" step="0.01" value="65" />
-        <label>Spending</label>
-        <input id="spending" type="number" step="0.01" value="90" />
-        <label>Phone payment</label>
-        <input id="phone" type="number" step="0.01" value="35.55" />
-        <label>Subscriptions</label>
-        <input id="subs" type="number" step="0.01" value="15" />
+      <!-- LEFT: Inputs -->
+      <section class="card" id="inputs">
+        <h2>Inputs</h2>
+        <div class="row"><label for="net">Take‑home pay (this week)</label><input id="net" type="number" min="0" step="0.01"></div>
+        <div class="row"><label for="fuel">Fuel</label><input id="fuel" type="number" min="0" step="0.01"></div>
+        <div class="row"><label for="spending">Spending</label><input id="spending" type="number" min="0" step="0.01"></div>
+        <div class="row"><label for="phone">Phone payment</label><input id="phone" type="number" min="0" step="0.01"></div>
+        <div class="row"><label for="subs">Subscriptions</label><input id="subs" type="number" min="0" step="0.01"></div>
 
-        <label>Yamba Rod Run (%)</label>
-        <input id="p1" type="number" step="1" value="15" />
-        <label>Gold Coast 500 (%)</label>
-        <input id="p2" type="number" step="1" value="15" />
-        <label>Savings (%)</label>
-        <input id="p3" type="number" step="1" value="70" />
+        <div class="row"><label for="p1">Yamba Rod Run (%)</label><input id="p1" type="number" min="0" max="100" step="1"></div>
+        <div class="row"><label for="p2">Gold Coast 500 (%)</label><input id="p2" type="number" min="0" max="100" step="1"></div>
+        <div class="row"><label for="p3">Savings (%)</label><input id="p3" type="number" min="0" max="100" step="1"></div>
 
-        <button onclick="resetDefaults()">Reset</button>
-      </div>
+        <div class="btns">
+          <button id="reset">Reset to your defaults</button>
+          <button class="secondary" id="addWeek">Add week to history</button>
+          <button class="secondary" id="clearHist">Clear history</button>
+          <button class="secondary" id="printBtn">Print / Save PDF</button>
+          <button class="secondary" id="copyBtn">Copy summary</button>
+        </div>
+        <p class="foot">Tip: Your entries auto‑save to this browser. Reset puts back your preferred defaults.</p>
 
-      <div>
-        <table>
+        <!-- Savings Graph (this week) -->
+        <div class="graphWrap" style="margin-top:16px">
+          <h3 style="margin:0 0 8px;font-size:16px;color:var(--ink);font-weight:700">This week’s split</h3>
+          <div class="muted" style="margin:0 0 8px">Breakdown of your leftover across Yamba Rod Run, Gold Coast 500, and Savings.</div>
+          <canvas id="savingsChart" height="180"></canvas>
+          <div class="inline" style="margin-top:8px;gap:14px;flex-wrap:wrap">
+            <span class="tag">Yamba Rod Run: <b id="legendYamba">$0.00</b></span>
+            <span class="tag">Gold Coast 500: <b id="legendGC500">$0.00</b></span>
+            <span class="tag">Savings: <b id="legendSav">$0.00</b></span>
+            <span class="tag" style="border-color:rgba(255,255,255,.25)">Total (all 3): <b id="legendTotal">$0.00</b></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Results -->
+      <section class="card" id="results">
+        <h2>Results</h2>
+        <div class="totals">
+          <div class="kpi"><div class="k">Fixed costs</div><div class="v" id="fixedOut">$0.00</div></div>
+          <div class="kpi"><div class="k">Leftover to split</div><div class="v" id="leftOut">$0.00</div></div>
+        </div>
+
+        <table class="table" aria-label="Breakdown table">
           <thead><tr><th>Category</th><th class="right">Amount</th></tr></thead>
           <tbody id="tableBody"></tbody>
-          <tfoot><tr><th>Total allocated</th><th id="totalOut" class="right">$0.00</th></tr></tfoot>
+          <tfoot><tr><th>Total allocated</th><th class="right" id="totalOut">$0.00</th></tr></tfoot>
         </table>
-        <canvas id="savingsChart" height="200"></canvas>
-      </div>
+
+        <div style="margin-top:12px">
+          <div class="bar" aria-label="Allocation bar"><span id="barH1" style="width:0%"></span></div>
+          <div class="inline" style="margin-top:8px">
+            <span class="tag">Yamba Rod Run: <b id="h1Pct">15%</b></span>
+            <span class="tag">Gold Coast 500: <b id="h2Pct">15%</b></span>
+            <span class="tag">Savings: <b id="savPct">70%</b></span>
+          </div>
+        </div>
+
+        <h3 style="margin:18px 0 8px;font-size:16px">Overall progress (history)</h3>
+        <p class="muted" style="margin-top:0">Tracks the <b>total saved across all three buckets</b> over time. Use “Add week to history”.</p>
+        <canvas id="overallChart" height="220"></canvas>
+        <p class="foot" id="histNote"></p>
+      </section>
     </div>
   </div>
 
   <script>
-    const $ = id => document.getElementById(id);
+    const $ = (id) => document.getElementById(id);
 
-    function money(v){return v.toLocaleString(undefined,{style:'currency',currency:'AUD'});}
+    const DEFAULTS = {
+      net: 400.00,
+      fuel: 65.00,
+      spending: 90.00,
+      phone: 35.55,
+      subs: 15.00,
+      p1: 15,
+      p2: 15,
+      p3: 70
+    };
+
+    const inputs = ['net','fuel','spending','phone','subs','p1','p2','p3'];
+
+    function load(){
+      const saved = JSON.parse(localStorage.getItem('paySplitCalc') || 'null');
+      const data = saved || DEFAULTS;
+      for(const k of inputs){ $(k).value = data[k]; }
+      update();
+      drawOverall();
+    }
+
+    function save(){
+      const data = Object.fromEntries(inputs.map(k=>[k, +($(k).value||0)]));
+      localStorage.setItem('paySplitCalc', JSON.stringify(data));
+    }
+
+    function money(x){ return x.toLocaleString(undefined,{style:'currency',currency:'AUD'}); }
+
+    function clampPercents(){
+      let p1=+$('p1').value||0, p2=+$('p2').value||0, p3=+$('p3').value||0;
+      const sum = p1+p2+p3;
+      if(sum!==100){
+        if(sum>0){ p1=p1/sum*100; p2=p2/sum*100; p3=p3/sum*100; }
+        else { p1=15; p2=15; p3=70; }
+        $('p1').value=Math.round(p1); $('p2').value=Math.round(p2); $('p3').value=100-Math.round(p1)-Math.round(p2);
+      }
+      $('h1Pct').textContent = $('p1').value+"%";
+      $('h2Pct').textContent = $('p2').value+"%";
+      $('savPct').textContent = $('p3').value+"%";
+    }
 
     function update(){
+      clampPercents();
       const net = +$('net').value||0;
-      const fixed = (+$('fuel').value||0)+(+$('spending').value||0)+(+$('phone').value||0)+(+$('subs').value||0);
-      const left = Math.max(0,net-fixed);
+      const fixed = (+$('fuel').value||0) + (+$('spending').value||0) + (+$('phone').value||0) + (+$('subs').value||0);
+      const left = Math.max(0, net - fixed);
+
+      const p1 = (+$('p1').value||0)/100; const p2 = (+$('p2').value||0)/100; const p3 = (+$('p3').value||0)/100;
+      const yamba = left * p1; const gc500 = left * p2; const sav = left * p3;
+
+      $('fixedOut').textContent = money(fixed);
+      $('leftOut').textContent = money(left);
+
+      const rows = [
+        ['Fuel', +$('fuel').value||0],
+        ['Spending', +$('spending').value||0],
+        ['Phone payment', +$('phone').value||0],
+        ['Subscriptions', +$('subs').value||0],
+        ['Yamba Rod Run (leftover)', yamba],
+        ['Gold Coast 500 (leftover)', gc500],
+        ['Savings (leftover)', sav]
+      ];
+      const tb = $('tableBody'); tb.innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td class="right">${money(v)}</td></tr>`).join('');
+
+      const total = fixed + yamba + gc500 + sav; $('totalOut').textContent = money(total);
+
+      // split bar
+      $('barH1').style.width = `${Math.min(100, (left>0? (yamba/left*100):0))}%`;
+      $('legendYamba').textContent = money(yamba);
+      $('legendGC500').textContent = money(gc500);
+      $('legendSav').textContent = money(sav);
+      $('legendTotal').textContent = money(yamba+gc500+sav);
+
+      $('note').innerHTML = net < fixed ? `<span class="danger">Short by ${money(fixed-net)} to cover fixed costs.</span>` : `<span class="success">All fixed costs covered. ${money(left)} split into ${$('p1').value}% / ${$('p2').value}% / ${$('p3').value}%.</span>`;
+
+      drawSavingsChart(yamba,gc500,sav);
+      save();
+    }
+
+    // This week's bar chart
+    function drawSavingsChart(y,g,s){
+      const c = $('savingsChart'); if(!c) return; const dpr = window.devicePixelRatio||1; const rect=c.getBoundingClientRect();
+      const W = Math.max(300, rect.width); const H = 180; c.width=W*dpr; c.height=H*dpr; const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#0b1227'; ctx.fillRect(0,0,W,H);
+      const pad={t:20,r:20,b:28,l:52}; const cw=W-pad.l-pad.r; const ch=H-pad.t-pad.b;
+      const data=[{label:'Yamba Rod Run',val:y,c1:'#22c55e',c2:'#34d399'},{label:'Gold Coast 500',val:g,c1:'#60a5fa',c2:'#93c5fd'},{label:'Savings',val:s,c1:'#a78bfa',c2:'#c4b5fd'}];
+      const maxVal=Math.max(1,...data.map(d=>d.val)); const barW=Math.min(120,Math.max(40,cw/(data.length*1.8))); const gap=(cw-data.length*barW)/(data.length+1);
+      // grid
+      ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1; ctx.font='12px Inter, system-ui, sans-serif'; ctx.fillStyle='rgba(229,231,235,.8)';
+      for(let i=0;i<=4;i++){const yline=pad.t+ch-(i/4)*ch; ctx.beginPath(); ctx.moveTo(pad.l,yline); ctx.lineTo(W-pad.r,yline); ctx.stroke(); const val=(maxVal*i/4); ctx.fillText(val.toLocaleString(undefined,{style:'currency',currency:'AUD'}),6,yline-2)}
+      // bars
+      data.forEach((d,idx)=>{const x=pad.l+gap+idx*(barW+gap); const h=(d.val/maxVal)*ch; const yTop=pad.t+ch-h; const ggrad=ctx.createLinearGradient(0,yTop,0,yTop+h); ggrad.addColorStop(0,d.c1); ggrad.addColorStop(1,d.c2); ctx.fillStyle=ggrad; ctx.fillRect(x,yTop,barW,h); ctx.fillStyle='rgba(229,231,235,.9)'; ctx.textAlign='center'; ctx.fillText(d.label,x+barW/2,H-8); ctx.font='bold 12px Inter, system-ui, sans-serif'; ctx.fillText(d.val.toLocaleString(undefined,{style:'currency',currency:'AUD'}), x+barW/2, yTop-6);});
+    }
+
+    // ===== History (overall progress) =====
+    function getHistory(){ return JSON.parse(localStorage.getItem('paySplitHistory')||'[]'); }
+    function setHistory(arr){ localStorage.setItem('paySplitHistory', JSON.stringify(arr)); }
+
+    function addWeek(){
+      // use today's date label
+      const d = new Date(); const label = d.toISOString().slice(0,10);
+      const left = +($('leftOut').textContent.replace(/[^\d.-]/g,'')||0);
       const p1=(+$('p1').value||0)/100, p2=(+$('p2').value||0)/100, p3=(+$('p3').value||0)/100;
-      const yamba=left*p1, gc500=left*p2, sav=left*p3;
-
-      const rows=[['Fuel',+$('fuel').value||0],['Spending',+$('spending').value||0],['Phone payment',+$('phone').value||0],['Subscriptions',+$('subs').value||0],['Yamba Rod Run',yamba],['Gold Coast 500',gc500],['Savings',sav]];
-      $('tableBody').innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td class='right'>${money(v)}</td></tr>`).join('');
-      $('totalOut').textContent=money(fixed+yamba+gc500+sav);
-      drawChart(yamba,gc500,sav);
+      const y=left*p1, g=left*p2, s=left*p3; const total = y+g+s;
+      const hist = getHistory();
+      // if same date exists, replace
+      const idx = hist.findIndex(x=>x.label===label);
+      const entry = {label, y, g, s, total};
+      if(idx>=0) hist[idx]=entry; else hist.push(entry);
+      setHistory(hist);
+      drawOverall();
     }
 
-    function drawChart(y,g,s){
-      const c=$('savingsChart'); if(!c)return; const ctx=c.getContext('2d');
-      const W=c.width=c.clientWidth; const H=c.height=200; ctx.clearRect(0,0,W,H);
-      const data=[{label:'Yamba Rod Run',val:y,color:'#22c55e'},{label:'Gold Coast 500',val:g,color:'#60a5fa'},{label:'Savings',val:s,color:'#a78bfa'}];
-      const max=Math.max(1,...data.map(d=>d.val)); const barW=W/(data.length*2);
-      data.forEach((d,i)=>{const x=barW/2+i*barW*2; const h=(d.val/max)*(H-40); const y=H-h-20; ctx.fillStyle=d.color; ctx.fillRect(x,y,barW,h); ctx.fillStyle='#e5e7eb'; ctx.textAlign='center'; ctx.fillText(d.label,x+barW/2,H-5); ctx.fillText(money(d.val),x+barW/2,y-6);});
+    function clearHistory(){ setHistory([]); drawOverall(); }
+
+    function drawOverall(){
+      const hist = getHistory();
+      const c = $('overallChart'); if(!c) return; const dpr=window.devicePixelRatio||1; const rect=c.getBoundingClientRect(); const W=Math.max(300,rect.width); const H=220; c.width=W*dpr; c.height=H*dpr; const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#0b1227'; ctx.fillRect(0,0,W,H);
+      if(hist.length===0){ $('histNote').innerHTML = '<span class="muted">No history yet. Click <b>Add week to history</b> after you enter your week.</span>'; return; }
+      $('histNote').textContent = '';
+      // cumulative total across all three
+      let cum=0; const points = hist.sort((a,b)=>a.label.localeCompare(b.label)).map(r=>{cum+=r.total; return {x:r.label, y:cum};});
+      const labels = points.map(p=>p.x);
+      const maxY = Math.max(1, ...points.map(p=>p.y));
+      const pad={t:20,r:20,b:30,l:52}; const cw=W-pad.l-pad.r; const ch=H-pad.t-pad.b;
+      // grid
+      ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1; ctx.font='12px Inter, system-ui, sans-serif'; ctx.fillStyle='rgba(229,231,235,.8)';
+      for(let i=0;i<=4;i++){ const y=pad.t+ch-(i/4)*ch; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke(); const val=maxY*i/4; ctx.fillText(val.toLocaleString(undefined,{style:'currency',currency:'AUD'}),6,y-2); }
+      // axes
+      // line path
+      const step = points.length>1? cw/(points.length-1):0;
+      ctx.beginPath(); ctx.strokeStyle='#60a5fa'; ctx.lineWidth=2.5;
+      points.forEach((p,i)=>{ const x=pad.l + i*step; const y=pad.t + ch - (p.y/maxY)*ch; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke();
+      // dots and labels
+      ctx.fillStyle='#93c5fd'; ctx.textAlign='center';
+      points.forEach((p,i)=>{ const x=pad.l + i*step; const y=pad.t + ch - (p.y/maxY)*ch; ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2); ctx.fill(); ctx.fillText(p.x, x, H-8); });
     }
 
-    function resetDefaults(){ $('net').value=400; $('fuel').value=65; $('spending').value=90; $('phone').value=35.55; $('subs').value=15; $('p1').value=15; $('p2').value=15; $('p3').value=70; update(); }
+    // Events
+    inputs.forEach(id=>$(id).addEventListener('input', update));
+    $('reset').addEventListener('click', ()=>{ localStorage.removeItem('paySplitCalc'); load(); });
+    $('addWeek').addEventListener('click', addWeek);
+    $('clearHist').addEventListener('click', clearHistory);
+    $('printBtn').addEventListener('click', ()=> window.print());
+    $('copyBtn').addEventListener('click', ()=>{
+      const fixed = $('fixedOut').textContent; const left = $('leftOut').textContent; const total=$('totalOut').textContent;
+      const t = `Weekly Pay Split\n\nTake-home: ${$('net').value}\nFixed costs: ${fixed}\nLeftover: ${left}\n\nAllocations:\n- Fuel: ${$('fuel').value}\n- Spending: ${$('spending').value}\n- Phone: ${$('phone').value}\n- Subscriptions: ${$('subs').value}\n- Yamba Rod Run (${ $('p1').value }% of leftover)\n- Gold Coast 500 (${ $('p2').value }% of leftover)\n- Savings (${ $('p3').value }% of leftover)\n\nTotal allocated: ${total}`;
+      navigator.clipboard.writeText(t).then(()=>{ $('histNote').innerHTML = '<span class="success">Copied summary to clipboard.</span>'; });
+    });
 
-    document.querySelectorAll('input').forEach(i=>i.addEventListener('input',update));
-    update();
+    window.addEventListener('resize', ()=>{ drawSavingsChart(0,0,0); drawOverall(); update(); });
+
+    load();
   </script>
 </body>
 </html>
