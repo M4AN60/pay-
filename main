@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Pay Split Calculator (AU)</title>
+  <style>
+    body {font-family: Inter, sans-serif; background:#0f172a; color:#e5e7eb; margin:0; padding:20px;}
+    .card {background:#111827; border-radius:16px; padding:20px; max-width:900px; margin:auto;}
+    h1 {font-size:24px; margin-bottom:10px;}
+    label {display:block; margin:8px 0 4px;}
+    input {width:100%; padding:8px; border-radius:8px; border:1px solid #334155; background:#0b1227; color:#e5e7eb;}
+    button {margin-top:10px; background:#22c55e; color:#000; border:none; padding:10px 14px; border-radius:8px; cursor:pointer;}
+    .grid {display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+    table {width:100%; border-collapse:collapse; margin-top:20px;}
+    th, td {padding:8px; border-bottom:1px solid #1e293b; text-align:left;}
+    .right{text-align:right;}
+    canvas{width:100%; background:#0b1227; border:1px solid #1e293b; border-radius:12px; margin-top:12px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Weekly Pay Split Calculator (AU)</h1>
+    <div class="grid">
+      <div>
+        <label>Take-home pay ($)</label>
+        <input id="net" type="number" step="0.01" value="400" />
+        <label>Fuel</label>
+        <input id="fuel" type="number" step="0.01" value="65" />
+        <label>Spending</label>
+        <input id="spending" type="number" step="0.01" value="90" />
+        <label>Phone payment</label>
+        <input id="phone" type="number" step="0.01" value="35.55" />
+        <label>Subscriptions</label>
+        <input id="subs" type="number" step="0.01" value="15" />
+
+        <label>Yamba Rod Run (%)</label>
+        <input id="p1" type="number" step="1" value="15" />
+        <label>Gold Coast 500 (%)</label>
+        <input id="p2" type="number" step="1" value="15" />
+        <label>Savings (%)</label>
+        <input id="p3" type="number" step="1" value="70" />
+
+        <button onclick="resetDefaults()">Reset</button>
+      </div>
+
+      <div>
+        <table>
+          <thead><tr><th>Category</th><th class="right">Amount</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+          <tfoot><tr><th>Total allocated</th><th id="totalOut" class="right">$0.00</th></tr></tfoot>
+        </table>
+        <canvas id="savingsChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    function money(v){return v.toLocaleString(undefined,{style:'currency',currency:'AUD'});}
+
+    function update(){
+      const net = +$('net').value||0;
+      const fixed = (+$('fuel').value||0)+(+$('spending').value||0)+(+$('phone').value||0)+(+$('subs').value||0);
+      const left = Math.max(0,net-fixed);
+      const p1=(+$('p1').value||0)/100, p2=(+$('p2').value||0)/100, p3=(+$('p3').value||0)/100;
+      const yamba=left*p1, gc500=left*p2, sav=left*p3;
+
+      const rows=[['Fuel',+$('fuel').value||0],['Spending',+$('spending').value||0],['Phone payment',+$('phone').value||0],['Subscriptions',+$('subs').value||0],['Yamba Rod Run',yamba],['Gold Coast 500',gc500],['Savings',sav]];
+      $('tableBody').innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td class='right'>${money(v)}</td></tr>`).join('');
+      $('totalOut').textContent=money(fixed+yamba+gc500+sav);
+      drawChart(yamba,gc500,sav);
+    }
+
+    function drawChart(y,g,s){
+      const c=$('savingsChart'); if(!c)return; const ctx=c.getContext('2d');
+      const W=c.width=c.clientWidth; const H=c.height=200; ctx.clearRect(0,0,W,H);
+      const data=[{label:'Yamba Rod Run',val:y,color:'#22c55e'},{label:'Gold Coast 500',val:g,color:'#60a5fa'},{label:'Savings',val:s,color:'#a78bfa'}];
+      const max=Math.max(1,...data.map(d=>d.val)); const barW=W/(data.length*2);
+      data.forEach((d,i)=>{const x=barW/2+i*barW*2; const h=(d.val/max)*(H-40); const y=H-h-20; ctx.fillStyle=d.color; ctx.fillRect(x,y,barW,h); ctx.fillStyle='#e5e7eb'; ctx.textAlign='center'; ctx.fillText(d.label,x+barW/2,H-5); ctx.fillText(money(d.val),x+barW/2,y-6);});
+    }
+
+    function resetDefaults(){ $('net').value=400; $('fuel').value=65; $('spending').value=90; $('phone').value=35.55; $('subs').value=15; $('p1').value=15; $('p2').value=15; $('p3').value=70; update(); }
+
+    document.querySelectorAll('input').forEach(i=>i.addEventListener('input',update));
+    update();
+  </script>
+</body>
+</html>
